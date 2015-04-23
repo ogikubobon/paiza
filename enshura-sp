@@ -1,0 +1,417 @@
+<?php
+
+  //(x,y)と(x2,y2)を交換する。16出ないほうの数字を出力する。
+  function swap($x1,$y1,$x2,$y2){
+    global $board;
+    global $emp;
+    global $mvCounter;
+    $tmp = $board[$y1][$x1];
+    $board[$y1][$x1] = $board[$y2][$x2];
+    $board[$y2][$x2] = $tmp;
+
+    if($board[$y1][$x1] !== 16){
+      echo $board[$y1][$x1];
+      $emp[0] = $x2;
+      $emp[1] = $y2;
+    }
+    else{
+      echo $board[$y2][$x2];
+      $emp[0] = $x1;
+      $emp[1] = $y1;
+    }
+    echo "\n";
+    $mvCounter++;
+  }
+
+
+  //(sx,sy)から(gx,gy)への最短経路を、座標配列の配列で返す
+  function makeGuide($tboard,$sx,$sy,$gx,$gy){
+
+    $que = new SplQueue();
+
+    $board2 = array();
+    for($i=0;$i<4;$i++){
+      $board2[$i] = array();
+      for($j=0;$j<4;$j++){
+        if($tboard[$i][$j] <=16)
+          $board2[$i][$j] = 100;
+        else
+          $board2[$i][$j] = -1;
+      }
+    }
+
+    $px = $sx;
+    $py = $sy;
+
+    $que->enqueue(array($px,$py,0));
+
+    while(!$que->isEmpty()){
+      $p = $que->dequeue();
+      $p[2]+=1;
+
+      if($p[0]!=0){
+        $p[0]-=1;
+        if($board2[$p[1]][$p[0]] > $p[2]){
+          $board2[$p[1]][$p[0]] = $p[2];
+          $que->enqueue(array($p[0],$p[1],$p[2]));
+        }
+        $p[0]+=1;
+      }
+      if($p[0]!=3){
+        $p[0]+=1;
+        if($board2[$p[1]][$p[0]] > $p[2]){
+          $board2[$p[1]][$p[0]] = $p[2];
+          $que->enqueue(array($p[0],$p[1],$p[2]));
+        }
+        $p[0]-=1;
+      }
+      if($p[1]!=0){
+        $p[1]-=1;
+        if($board2[$p[1]][$p[0]] > $p[2]){
+          $board2[$p[1]][$p[0]] = $p[2];
+          $que->enqueue(array($p[0],$p[1],$p[2]));
+        }
+        $p[1]+=1;
+      }
+      if($p[1]!=3){
+        $p[1]+=1;
+        if($board2[$p[1]][$p[0]] > $p[2]){
+          $board2[$p[1]][$p[0]] = $p[2];
+          $que->enqueue(array($p[0],$p[1],$p[2]));
+        }
+        $p[1]-=1;
+      }
+    }
+
+    $ans = array();
+    $px = $gx;
+    $py = $gy;
+    $num = $board2[$py][$px];
+    while($num !== 0){
+      array_unshift($ans,array($px,$py));
+      $num--;
+
+      //現在地の次がどこであるかをnumの数値で判別
+      if($px !== 0){
+        $px--;
+        if($board2[$py][$px] === $num){
+          continue;
+        }
+        $px++;
+      }
+      if($px !== 3){
+        $px++;
+        if($board2[$py][$px] === $num){
+          continue;
+        }
+        $px--;
+      }
+      if($py !== 0){
+        $py--;
+        if($board2[$py][$px] === $num){
+          continue;
+        }
+        $py++;
+      }
+      if($py !== 3){
+        $py++;
+        if($board2[$py][$px] === $num){
+          continue;
+        }
+        $py--;
+      }
+    }
+   return($ans);
+  }
+
+  //数字aを動かさないようにgx,gyに数字16を移動させる
+  function empset($a,$gx,$gy){
+    global $board;
+    global $emp;
+
+    $tmpA = search_number($a);
+    $board[$tmpA[1]][$tmpA[0]] = 100;
+
+   $guide = makeGuide($board,$emp[0],$emp[1],$gx,$gy);
+    $board[$tmpA[1]][$tmpA[0]] = $a;
+
+
+    for($i=0; $i<count($guide);$i++){
+      swap($emp[0],$emp[1],$guide[$i][0],$guide[$i][1]);
+    }
+  }
+
+  //数字a,bを動かさないようにgx,gyに数字16を移動させる
+  function empset2($a,$b,$gx,$gy){
+    global $board;
+    global $emp;
+
+    $tmpA = search_number($a);
+    $tmpB = search_number($b);
+    $board[$tmpA[1]][$tmpA[0]] = 100;
+    $board[$tmpB[1]][$tmpB[0]] = 100;
+    $guide = makeGuide($board,$emp[0],$emp[1],$gx,$gy);
+    $board[$tmpA[1]][$tmpA[0]] = $a;
+    $board[$tmpB[1]][$tmpB[0]] = $b;
+
+    for($i=0; $i<count($guide);$i++){
+      swap($emp[0],$emp[1],$guide[$i][0],$guide[$i][1]);
+    }
+  }
+
+  //数字aをx,yに移動させる
+  //99は動かせない数字
+  function numset($a,$gx,$gy){
+    global $board;
+    global $emp;
+    $tmp = search_number($a);
+    $px = $tmp[0];
+    $py = $tmp[1];
+
+    //echo "$a:($px,$py)..($gx,$gy)\n";
+
+    $guide = makeGuide($board,$px,$py,$gx,$gy);
+
+    //var_dump($guide);
+
+    for($i=0; $i<count($guide);$i++){
+      empset($a,$guide[$i][0],$guide[$i][1]);
+      swap($emp[0],$emp[1],$px,$py);
+      $px = $guide[$i][0];
+      $py = $guide[$i][1];
+    }
+
+  }
+  //数字aをx,yに移動させる
+  //board[2][2]も動かせない
+  function numset22($a,$gx,$gy){
+    global $board;
+    global $emp;
+    $tmp = search_number($a);
+    $px = $tmp[0];
+    $py = $tmp[1];
+
+    $tmp22 = $board[2][2];
+    $board[2][2] = 100;
+    //echo "$a:($px,$py)..($gx,$gy)\n";
+    $guide = makeGuide($board,$px,$py,$gx,$gy);
+
+    $board[2][2] = $tmp22;
+    //var_dump($guide);
+
+    for($i=0; $i<count($guide);$i++){
+      empset2($a,$tmp22,$guide[$i][0],$guide[$i][1]);
+      swap($emp[0],$emp[1],$px,$py);
+      $px = $guide[$i][0];
+      $py = $guide[$i][1];
+    }
+
+  }
+
+  //ある数字がどの位置にあるか
+  //x,yの配列で返す
+  function search_number($a){
+    global $board;
+    $x=0;
+    $y=0;
+
+    for($i=0;$i<4;$i++){
+      for($j=0;$j<4;$j++){
+        if($board[$i][$j]===$a){
+          $x = $j;
+          $y = $i;
+          break;
+        }
+      }
+    }
+    return array($x,$y);
+  }
+
+  function number_setting($a){
+    global $board;
+    $t = $a-1;
+
+    if($board[(int)floor($t/4)][$t%4] !== $a){
+      numset($a,$t%4,(int)floor($t/4));
+    }
+    $board[(int)floor($t/4)][$t%4] = 99;
+  }
+
+  function shudou23(){
+    global $board;
+
+    if($board[0][1]===2 && $board[0][2]===3)
+     ;
+    else{
+
+    if($board[2][2]!==2)
+      numset(2,2,2);
+    if($board[3][2]!==3)
+      numset22(3,2,3);
+
+
+    empset2(2,3,2,1);
+    swap(2,1,2,2);
+    swap(2,2,2,3);
+    swap(2,3,1,3);
+    swap(1,3,1,2);
+    swap(1,2,1,1);
+    swap(1,1,1,0);
+    swap(1,0,2,0);
+
+    swap(2,0,2,1);
+    swap(2,1,2,2);
+    swap(2,2,1,2);
+    swap(1,2,1,1);
+    swap(1,1,1,0);
+
+    swap(1,0,2,0);
+    swap(2,0,2,1);
+    }
+
+    $board[0][1]=99;
+    $board[0][2]=99;
+  }
+  function shudou59(){
+    global $board;
+
+   if($board[1][0]===5 && $board[2][0]===9)
+      ;
+   else{
+    if($board[2][2]!==5)
+      numset(5,2,2);
+    if($board[2][3]!==9)
+      numset22(9,3,2);
+
+
+    empset2(5,9,1,2);
+    swap(1,2,2,2);
+    swap(2,2,3,2);
+    swap(3,2,3,1);
+    swap(3,1,2,1);
+    swap(2,1,1,1);
+    swap(1,1,0,1);
+    swap(0,1,0,2);
+
+    swap(0,2,1,2);
+    swap(1,2,2,2);
+    swap(2,2,2,1);
+    swap(2,1,1,1);
+    swap(1,1,0,1);
+
+    swap(0,1,0,2);
+    swap(0,2,1,2);
+   }
+   $board[1][0]=99;
+   $board[2][0]=99;
+  }
+
+  function isComplete7_16(){
+    global $board;
+
+
+    if(
+    (($board[1][2]=== 7)||($board[1][2]>=90))&&
+    (($board[1][3]=== 8)||($board[1][3]>=90))&&
+    ($board[2][1]=== 10)&&
+    ($board[2][2]=== 11)&&
+    ($board[2][3]=== 12)&&
+    ($board[3][1]=== 14)&&
+    ($board[3][2]=== 15))
+      return true;
+    return false;
+
+
+  }
+
+function random7_16(){
+
+    global $board;
+    global $emp;
+    $tmp=16;
+
+    $flag = array();
+
+    //後はランダム
+    while(!isComplete7_16()){
+      $rand = rand(0,3);
+
+      //左
+      if(($rand ===0)&&($emp[0]!==1)){
+        if(($tmp!==$board[$emp[1]][$emp[0]-1])&&($board[$emp[1]][$emp[0]-1]<=16)){
+          $tmp = $board[$emp[1]][$emp[0]-1];
+          swap($emp[0],$emp[1],$emp[0]-1,$emp[1]);
+        }
+      }
+      //右
+      else if(($rand ===1)&&($emp[0]!==3)){
+        if(($tmp!==$board[$emp[1]][$emp[0]+1])&&($board[$emp[1]][$emp[0]+1]<=16)){
+          $tmp = $board[$emp[1]][$emp[0]+1];
+          swap($emp[0],$emp[1],$emp[0]+1,$emp[1]);
+        }
+      }
+      //上
+      else if(($rand ===2)&&($emp[1]!==1)){
+        if(($tmp!==$board[$emp[1]-1][$emp[0]])&&($board[$emp[1]-1][$emp[0]]<=16)){
+          $tmp = $board[$emp[1]-1][$emp[0]];
+          swap($emp[0],$emp[1],$emp[0],$emp[1]-1);
+        }
+      }
+      //下
+      else if(($rand ===3)&&($emp[1]!==3)){
+        if(($tmp!==$board[$emp[1]+1][$emp[0]])&&($board[$emp[1]+1][$emp[0]]<=16)){
+          $tmp = $board[$emp[1]+1][$emp[0]];
+          swap($emp[0],$emp[1],$emp[0],$emp[1]+1);
+        }
+      }
+
+      if(($board[1][2]===7)&&($board[1][3]===8)){
+        $board[1][2]=99;
+        $board[1][3]=99;
+      }
+
+    }
+}
+
+//実行箇所
+ function executionSP(){
+
+    number_setting(1);
+    number_setting(4);
+    shudou23();
+    number_setting(13);
+    shudou59();
+    number_setting(6);
+    random7_16();
+
+  }
+
+  $board = array();
+  $emp = array();
+
+  $mvCounter=0;
+
+  for($i=0;$i<4;$i++){
+    $input_lines = fgets(STDIN);
+    $input_lines = str_replace("\n","",$input_lines);
+    $tmp = explode(" ",$input_lines);
+    $board[$i] = array();
+
+
+    for($j=0;$j<4;$j++){
+      if($tmp[$j]==="*"){
+        $board[$i][$j] = 16;
+        $emp[0] = $j;
+        $emp[1] = $i;
+      }
+      else
+        $board[$i][$j] = (int)$tmp[$j];
+    }
+
+  }
+
+  executionSP();
+  //var_dump(make_FlagString());
+  //var_dump($board);
+  //var_dump($mvCounter);
+?>
