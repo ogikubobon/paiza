@@ -1,0 +1,62 @@
+<?php
+
+
+  $inp = fgets(STDIN);
+  $tmp = explode(" ",$inp);
+  $l = $tmp[0];
+  $n = $tmp[1];
+  $m = $tmp[2];
+
+  $rope = array();
+  $crossAt = array();
+  for($i=0; $i<$n;$i++){
+    $rope[$i] = array();
+    $crossAt[$i] = array();
+  }
+
+  for($i=0; $i<$m; $i++){
+    $inp = fgets(STDIN);
+    $tmp = explode(" ",$inp);
+    $tmp[0] = (int)$tmp[0] -1;
+    $tmp[1] = (int)$tmp[1];
+    $tmp[2] = (int)$tmp[2];
+
+    $rope[$tmp[0]][$tmp[1]] = array($tmp[0]+1,$tmp[2]);
+    $rope[$tmp[0]+1][$tmp[2]] = array($tmp[0],$tmp[1]);
+
+    if(!in_array($tmp[1],$crossAt[$tmp[0]]))
+        $crossAt[$tmp[0]][] = ($tmp[1]);
+    if(!in_array($tmp[2],$crossAt[$tmp[0]+1]))
+        $crossAt[$tmp[0]+1][] = ($tmp[2]);
+  }
+
+  for($i=0;$i<$n;$i++){
+    ksort($rope[$i]);
+    sort($crossAt[$i]);
+    //var_dump($crossAt[$i]);
+  }
+
+  $p = $rope[0][$crossAt[0][count($crossAt[0])-1]];
+
+  //var_dump($crossAt);
+
+
+  while(true){
+    //var_dump($crossAt[$p[0]]);
+    //var_dump($p);
+
+    $tmp = array_search($p[1],$crossAt[$p[0]]);
+
+    $tmp = (int)$tmp;
+    //var_dump($tmp);
+    //var_dump($p);
+    //ゴール
+    if($tmp===0)
+      break;
+
+    $p = $rope[$p[0]][$crossAt[$p[0]][$tmp-1]];
+
+  }
+  echo $p[0]+1;
+
+?>
