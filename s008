@@ -1,0 +1,190 @@
+<?php
+
+class MyPriorityQueue extends SplPriorityQueue{
+  public function compare($priority1,$priority2){
+    if($priority1 === $priority2) return 0;
+      return ($priority1 > $priority2) ? -1: 1;
+  }
+}
+
+class Dice{
+  private $x;
+  private $y;
+  private $state;//表：上：右から成る3ケタ
+  private $cost;
+  function __construct($a,$b,$c,$d){
+    $this->x = $a;
+    $this->y = $b;
+    $this->state = $c;
+    $this->cost = $d;
+  }
+
+  function get_adress(){
+    return ( array($this->x,$this->y));
+  }
+  function get_state(){
+    return (int)$this->state;
+  }
+  function get_cost(){
+    return (int)$this->cost;
+  }
+}
+
+function rightRoll($state){
+  $tmp = $state;
+  $right = $tmp%10;
+  $tmp = floor($tmp/10);
+  $up = $tmp%10;
+  $face = floor($tmp/10);
+
+  $newR = $face;
+  $newF = 7-$right;
+  $newU = $up;
+
+  return (int)(100*$newF + 10*$newU + $newR);
+}
+function leftRoll($state){
+  $tmp = $state;
+  $right = $tmp%10;
+  $tmp = floor($tmp/10);
+  $up = $tmp%10;
+  $face = floor($tmp/10);
+
+  $newF = $right;
+  $newR = 7-$face;
+  $newU = $up;
+  return (int)(100*$newF + 10*$newU + $newR);
+}
+function upRoll($state){
+  $tmp = $state;
+  $right = $tmp%10;
+  $tmp = floor($tmp/10);
+  $up = $tmp%10;
+  $face = floor($tmp/10);
+
+  $newR = $right;
+  $newU = $face;
+  $newF = 7-$up;
+
+  return (int)(100*$newF + 10*$newU + $newR);
+}
+function downRoll($state){
+  $tmp = $state;
+  $right = $tmp%10;
+  $tmp = floor($tmp/10);
+  $up = $tmp%10;
+  $face = floor($tmp/10);
+
+  $newR = $right;
+  $newF = $up;
+  $newU = 7-$face;
+  return (int)(100*$newF + 10*$newU + $newR);
+}
+
+
+$que = new MyPriorityQueue();
+
+
+
+$input_lines = fgets(STDIN);
+$tmp = explode(" ",$input_lines);
+$h = $tmp[0];
+$w = $tmp[1];
+
+$board = array();
+$dp = array();
+for($i = 0; $i<$h;$i++){
+  $input_lines = fgets(STDIN);
+  //$tmp = explode(" ",$input_lines);
+  $board[$i] = array();
+  $dp[$i] = array();
+  for($j=0; $j<$w;$j++){
+    $board[$i][$j] = (int)$input_lines[$j];
+    $dp[$i][$j] = array();
+  }
+}
+$goal = PHP_INT_MAX;
+$p = new Dice(0,0,123,0);
+$dp[0][0][123] = 0;
+//$que->insert($p,$p->get_cost());
+while($p!==NULL){
+  if($p->get_cost() >= $goal)
+    break;
+
+
+
+  $tmp_adress = $p->get_adress();
+  $tmp_cost = $p->get_cost();
+  $tmp_state = $p->get_state();
+  $x = $tmp_adress[0];
+  $y = $tmp_adress[1];
+
+  //u
+  if($y !==0){
+    $y-=1;
+
+    $next_state = upRoll($tmp_state);
+    $next_cost = abs((int)floor($next_state/100) - $board[$y][$x])+$tmp_cost;
+    if( ($x===$w-1)&&($y===$h-1)){
+      if($goal > $next_cost)
+        $goal = $next_cost;
+    }
+    else if(!array_key_exists($next_state,$dp[$y][$x]) || ( $next_cost < $dp[$y][$x][$next_state])){
+      $dp[$y][$x][$next_state] = $next_cost;
+      $que->insert(new Dice($x,$y,$next_state,$next_cost),$next_cost);
+    }
+    $y+=1;
+  }
+
+  //d
+  if($y !==$h-1){
+    $y+=1;
+    $next_state = downRoll($tmp_state);
+    $next_cost = abs((int)floor($next_state/100) - $board[$y][$x])+$tmp_cost;
+    if( ($x===$w-1)&&($y===$h-1)){
+      if($goal > $next_cost)
+        $goal = $next_cost;
+    }
+    else if(!array_key_exists($next_state,$dp[$y][$x]) || ( $next_cost < $dp[$y][$x][$next_state])){
+      $dp[$y][$x][$next_state] = $next_cost;
+      $que->insert(new Dice($x,$y,$next_state,$next_cost),$next_cost);
+    }
+    $y-=1;
+  }
+  //l
+  if($x !==0){
+    $x-=1;
+    $next_state = leftRoll($tmp_state);
+    $next_cost = abs((int)floor($next_state/100) - $board[$y][$x])+$tmp_cost;
+    if( ($x===$w-1)&&($y===$h-1)){
+      if($goal > $next_cost)
+        $goal = $next_cost;
+    }
+    else if(!array_key_exists($next_state,$dp[$y][$x]) || ( $next_cost < $dp[$y][$x][$next_state])){
+      $dp[$y][$x][$next_state] = $next_cost;
+      $que->insert(new Dice($x,$y,$next_state,$next_cost),$next_cost);
+    }
+    $x+=1;
+  }
+  //r
+  if($x !==$w-1){
+    $x+=1;
+    $next_state = rightRoll($tmp_state);
+
+   $next_cost = abs((int)floor($next_state/100) - $board[$y][$x])+$tmp_cost;
+   if( ($x===$w-1)&&($y===$h-1)){
+      if($goal > $next_cost)
+        $goal = $next_cost;
+    }
+    else if(!array_key_exists($next_state,$dp[$y][$x]) || ( $next_cost < $dp[$y][$x][$next_state])){
+      $dp[$y][$x][$next_state] = $next_cost;
+      $que->insert(new Dice($x,$y,$next_state,$next_cost),$next_cost);
+    }
+    $x-=1;
+  }
+  $p = $que->current();
+  $que->next();
+}
+
+echo $goal."\n";
+?>
